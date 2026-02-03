@@ -1,0 +1,53 @@
+name: Compatibility Update
+
+on:
+  schedule:
+    - cron: '0 3 * * 1' # weekly Monday UTC
+  workflow_dispatch: {}
+
+jobs:
+  compatibility-update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # Add repo-specific dependencies here (e.g., pyyaml, requests)
+
+      - name: Detect changes
+        run: python scripts/detect_changes.py
+
+      - name: Extract text
+        run: python scripts/extract_text.py
+
+      - name: Extract envelope
+        run: python scripts/extract_envelope.py
+
+      - name: Diff rules
+        run: python scripts/diff_rules.py
+
+      - name: Generate tests
+        run: python scripts/generate_tests.py
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: compatibility-artifacts
+          path: |
+            rules/_generated/**
+            tests/_generated/**
+            docs/parsed/**
+          if-no-files-found: warn
+
+      - name: Create PR
+        if: success()
+        run: python scripts/create_pr.py
