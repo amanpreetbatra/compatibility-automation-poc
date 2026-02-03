@@ -20,7 +20,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          # Add repo-specific dependencies here (e.g., pyyaml, requests)
+          pip install pyyaml
 
       - name: Detect changes
         run: python scripts/detect_changes.py
