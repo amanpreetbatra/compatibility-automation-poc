@@ -26,6 +26,8 @@ This runs the full demo without any external API access and produces `dashboard.
 ## Enable AI mode
 GitHub Models works here because it only needs a GitHub personal access token with `models: read` scope.
 
+You can export variables directly, or copy `.env.example` to `.env` and set them there. The demo runner and AI analysis script both load `.env` automatically.
+
 ```bash
 export GITHUB_TOKEN=ghp_your_token_here
 python run_demo.py

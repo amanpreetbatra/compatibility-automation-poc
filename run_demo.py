@@ -15,6 +15,7 @@ from typing import Dict, List, Tuple
 import yaml  # type: ignore
 
 ROOT = Path(__file__).resolve().parent
+ENV_FILE = ROOT / ".env"
 DEMO_DIR = ROOT / "demo" / "sample_vendor_docs"
 RAW_DIR = ROOT / "docs" / "raw"
 PARSED_DIR = ROOT / "docs" / "parsed"
@@ -41,6 +42,23 @@ def load_yaml(path: Path):
         return {}
     with path.open() as handle:
         return yaml.safe_load(handle) or {}
+
+
+def load_dotenv(path: Path) -> None:
+    if not path.exists():
+        return
+    for raw_line in path.read_text().splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip()
+        if not key:
+            continue
+        if value and len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
+            value = value[1:-1]
+        os.environ.setdefault(key, value)
 
 
 def log_step(index: int, total: int, title: str) -> None:
@@ -79,7 +97,7 @@ def write_ai_placeholder(reason: str, offline: bool) -> None:
     payload = {
         "status": "skipped",
         "generated_at": datetime.utcnow().replace(microsecond=0).isoformat() + "Z",
-        "model": DEFAULT_MODEL,
+        "model": os.environ.get("GITHUB_MODEL", DEFAULT_MODEL),
         "endpoint": "https://models.github.ai/inference/chat/completions",
         "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
         "source_documents": [],
@@ -527,6 +545,7 @@ def print_artifacts() -> None:
 
 
 def main() -> None:
+    load_dotenv(ENV_FILE)
     parser = argparse.ArgumentParser(description="Run the compatibility automation demo.")
     parser.add_argument(
         "--offline",
@@ -534,6 +553,7 @@ def main() -> None:
         help="Skip GitHub Models analysis and run in regex-only mode.",
     )
     args = parser.parse_args()
+    model = os.environ.get("GITHUB_MODEL", DEFAULT_MODEL)
 
     total_steps = 8
     log_step(1, total_steps, "Stage docs")
@@ -568,6 +588,7 @@ def main() -> None:
     log_step(8, total_steps, "Generate HTML dashboard")
     generate_dashboard(offline=args.offline or not os.environ.get("GITHUB_TOKEN"))
     print(f"Wrote dashboard to {DASHBOARD_FILE.relative_to(ROOT)}")
+    print(f"Model setting: {model}")
 
     print_artifacts()
 
