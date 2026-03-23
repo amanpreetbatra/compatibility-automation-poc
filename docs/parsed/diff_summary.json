@@ -1,0 +1,12 @@
+{
+  "rules/_generated/veritas_802_rhel8.yaml": {
+    "decision": "pr_block_auto_merge",
+    "reason": "ambiguous",
+    "old_min": "4.18.0-193.el8",
+    "old_max": "4.18.0-425.el8",
+    "new_min": "4.18.0-193.el8",
+    "new_max": "4.18.0-425.el8",
+    "confidence": "high",
+    "ambiguous": true
+  }
+}

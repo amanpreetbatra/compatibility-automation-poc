@@ -1,0 +1,26 @@
+{
+  "status": "skipped",
+  "generated_at": "2026-03-23T18:29:59Z",
+  "model": "openai/gpt-4o",
+  "endpoint": "https://models.github.ai/inference/chat/completions",
+  "usage": {
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "total_tokens": 0
+  },
+  "source_documents": [],
+  "kernel_envelope": {
+    "min": null,
+    "max": null,
+    "evidence_min": "",
+    "evidence_max": ""
+  },
+  "unsupported_examples": [],
+  "confidence": "low",
+  "confidence_rationale": "",
+  "risks": [],
+  "ambiguous": true,
+  "ambiguity_notes": "Offline mode requested; AI analysis was skipped.",
+  "error": "Offline mode requested; AI analysis was skipped.",
+  "mode": "offline"
+}

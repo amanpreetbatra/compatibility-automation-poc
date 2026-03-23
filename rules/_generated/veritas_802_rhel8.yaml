@@ -1,0 +1,43 @@
+schema_version: 1.1
+application:
+  name: veritas_infoscale
+  version: 8.0.2
+os:
+  family: rhel
+  major_version: 8
+kernel:
+  min: 4.18.0-193.el8
+  max: 4.18.0-425.el8
+  unsupported_examples:
+  - 4.18.0-80.el8
+  - 4.18.0-477.el8
+  - 4.18.0-513.el8
+notes:
+  risk: Running outside the certified kernel envelope can destabilize Veritas storage
+    and clustering modules.
+  remediation: Keep kernel upgrades within the certified envelope or obtain updated
+    vendor confirmation before rollout.
+  evidence:
+    method: regex
+    line: InfoScale 8.0.2 supports kernel range 4.18.0-193.el8 through 4.18.0-425.el8
+      on RHEL 8.
+  ambiguity_notes: Offline mode requested; AI analysis was skipped.
+metadata:
+  sources:
+  - name: veritas_hcl_802
+    reference: veritas_hcl_802.txt
+    type: vendor_hcl
+    url: https://www.veritas.com/content/support/en_US/doc/infoscale_802_pcl
+  confidence: high
+  owner: sre-team
+  last_reviewed: '2026-01-30'
+  review_interval_days: 90
+  analysis_mode: regex_fallback
+  ai_status: skipped
+  ai_model: openai/gpt-4o
+  ai_usage:
+    prompt_tokens: 0
+    completion_tokens: 0
+    total_tokens: 0
+flags:
+  ambiguous: true

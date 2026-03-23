@@ -57,6 +57,8 @@ def main() -> None:
     for raw_path in RAW_DIR.glob("**/*"):
         if raw_path.is_dir():
             continue
+        if raw_path.name.startswith("."):
+            continue
         rel = str(raw_path.relative_to(RAW_DIR))
         digest = sha256_file(raw_path)
         current[rel] = digest

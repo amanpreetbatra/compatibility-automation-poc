@@ -29,6 +29,11 @@ def save_manifest(entries: Dict[str, str]) -> None:
     if MANIFEST_FILE.exists():
         with MANIFEST_FILE.open() as f:
             existing = json.load(f)
+    existing = {
+        raw_rel: parsed_rel
+        for raw_rel, parsed_rel in existing.items()
+        if not Path(raw_rel).name.startswith(".")
+    }
     existing.update(entries)
     with MANIFEST_FILE.open("w") as f:
         json.dump(existing, f, indent=2)
@@ -36,6 +41,8 @@ def save_manifest(entries: Dict[str, str]) -> None:
 
 def extract_file(rel_path: str) -> str:
     src = RAW_DIR / rel_path
+    if src.name.startswith("."):
+        return ""
     out_rel = rel_path + ".txt" if not rel_path.endswith(".txt") else rel_path
     dst = PARSED_DIR / out_rel
     dst.parent.mkdir(parents=True, exist_ok=True)
@@ -63,6 +70,8 @@ def main() -> None:
     manifest_updates: Dict[str, str] = {}
     for rel in pending.keys():
         parsed_rel = extract_file(rel)
+        if not parsed_rel:
+            continue
         manifest_updates[rel] = parsed_rel
         print(f"Extracted {rel} -> {parsed_rel}")
 

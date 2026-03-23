@@ -1,0 +1,34 @@
+Veritas InfoScale 8.0.2 Product Compatibility List
+Document ID: PCL-8.0.2-RHEL8
+Revision Date: October 2023
+
+Overview
+This compatibility extract summarizes the supported Red Hat Enterprise Linux 8 minor releases and GA kernels validated for Veritas InfoScale 8.0.2 in clustered and storage-managed deployments.
+
+Supported RHEL 8 Matrix
+| RHEL Release | GA Kernel           | Support Status |
+| ------------ | ------------------- | -------------- |
+| RHEL 8.2     | 4.18.0-193.el8      | Supported      |
+| RHEL 8.3     | 4.18.0-240.el8      | Supported      |
+| RHEL 8.4     | 4.18.0-305.el8      | Supported      |
+| RHEL 8.5     | 4.18.0-348.el8      | Supported      |
+| RHEL 8.6     | 4.18.0-372.el8      | Supported      |
+| RHEL 8.7     | 4.18.0-425.el8      | Supported      |
+
+Kernel Support Statement
+InfoScale 8.0.2 supports kernel range 4.18.0-193.el8 through 4.18.0-425.el8 on RHEL 8.
+
+Unsupported or Not Validated
+- 4.18.0-80.el8 is outside the certified RHEL 8 support envelope for InfoScale 8.0.2 and is not supported.
+- 4.18.0-477.el8 is not validated for InfoScale 8.0.2 on RHEL 8 and requires updated vendor certification before deployment.
+- 4.18.0-513.el8 exceeds the documented support envelope and is not supported for production rollout with InfoScale 8.0.2.
+
+Operational Notes
+- Running outside the documented kernel envelope can lead to Veritas kernel module load failures, fencing instability, or storage stack degradation.
+- Enterprise change control should block OS patching when the target kernel is newer than the documented certified maximum until the PCL or release notes are updated.
+- When a kernel is below the documented minimum or above the documented maximum, teams should obtain a refreshed compatibility statement from Veritas Support.
+
+Document References
+- Veritas InfoScale 8.0.2 Product Compatibility List, October 2023
+- Veritas InfoScale 8.0.2 Release Notes
+- Red Hat Enterprise Linux 8 GA kernel release advisories

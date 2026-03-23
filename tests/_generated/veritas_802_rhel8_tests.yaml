@@ -1,0 +1,27 @@
+- id: go-veritas_infoscale-4.18.0-425.el8
+  description: Upgrade within certified envelope
+  os: rhel8
+  current_kernel: 4.18.0-193.el8
+  target_kernel: 4.18.0-425.el8
+  applications:
+  - name: veritas_infoscale
+    version: 8.0.2
+  expected:
+    decision: GO
+    highest_supported_kernel: 4.18.0-425.el8
+    blocking_applications: []
+  rationale: Target kernel at documented upper bound for veritas_infoscale 8.0.2.
+- id: no-go-veritas_infoscale-4.18.0-426.el8
+  description: Upgrade beyond certified upper bound
+  os: rhel8
+  current_kernel: 4.18.0-193.el8
+  target_kernel: 4.18.0-426.el8
+  applications:
+  - name: veritas_infoscale
+    version: 8.0.2
+  expected:
+    decision: NO_GO
+    highest_supported_kernel: 4.18.0-425.el8
+    blocking_applications:
+    - veritas_infoscale
+  rationale: 4.18.0-426.el8 outside documented envelope; cap at 4.18.0-425.el8.

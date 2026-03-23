@@ -1,0 +1,7 @@
+sources:
+  - name: veritas_hcl_802
+    url: https://www.veritas.com/content/support/en_US/doc/infoscale_802_pcl
+    type: vendor_hcl
+  - name: veritas_rn_802
+    url: https://www.veritas.com/content/support/en_US/doc/infoscale_802_rn
+    type: release_notes
