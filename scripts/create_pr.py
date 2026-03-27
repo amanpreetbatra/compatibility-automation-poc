@@ -1,22 +1,24 @@
 #!/usr/bin/env python3
-"""Create PR with rule/reasoning/test changes and evidence summary; enforce gating labels.
+"""Create PR body with rule/test changes and evidence summary; enforce gating labels.
 
 This script prepares a PR body and gating decision based on diff_summary.json.
 It does not call GitHub directly; wire to gh CLI or API in CI where credentials exist.
 """
 
+import argparse
 import json
+import sys
 from pathlib import Path
 from typing import Dict
 
-SUMMARY_FILE = Path("docs/parsed/diff_summary.json")
-PR_BODY_FILE = Path("docs/parsed/pr_body.md")
+sys.path.insert(0, str(Path(__file__).parent))
+from lib import config_loader, path_resolver
 
 
-def load_summary() -> Dict:
-    if not SUMMARY_FILE.exists():
+def load_summary(summary_file: Path) -> Dict:
+    if not summary_file.exists():
         return {}
-    with SUMMARY_FILE.open() as f:
+    with summary_file.open() as f:
         return json.load(f)
 
 
@@ -32,13 +34,13 @@ def classify(summary: Dict) -> str:
 
 
 def build_body(summary: Dict, gate: str) -> str:
-    lines = ["## Compatibility Update", "", f"Gate: {gate}", ""]
-    lines.append("| Rule | Decision | Reason | Old min | Old max | New min | New max | Confidence | Ambiguous |")
+    lines = ["## Compatibility Update", "", f"Gate: **{gate}**", ""]
+    lines.append("| Config | Decision | Reason | Old min | Old max | New min | New max | Confidence | Ambiguous |")
     lines.append("| --- | --- | --- | --- | --- | --- | --- | --- | --- |")
-    for rule, data in summary.items():
+    for config_id, data in summary.items():
         lines.append(
-            "| {rule} | {decision} | {reason} | {old_min} | {old_max} | {new_min} | {new_max} | {confidence} | {ambiguous} |".format(
-                rule=rule,
+            "| {config} | {decision} | {reason} | {old_min} | {old_max} | {new_min} | {new_max} | {confidence} | {ambiguous} |".format(
+                config=config_id,
                 decision=data.get("decision"),
                 reason=data.get("reason"),
                 old_min=data.get("old_min"),
@@ -53,17 +55,43 @@ def build_body(summary: Dict, gate: str) -> str:
     lines.append("Review requirements:")
     lines.append("- Widening or low confidence or ambiguous → manual approval required.")
     lines.append("- Narrowing with high confidence can be approved per policy.")
+    lines.append("")
+    lines.append("---")
+    lines.append(
+        "If `HUMAN_REVIEW_NEEDED` was printed during extraction, download the review file from "
+        "CI artifacts and follow the Copilot Chat instructions in `human_reviews/{config-id}/`."
+    )
     return "\n".join(lines)
 
 
-def main() -> None:
-    summary = load_summary()
+def run_for_config(config_id: str) -> Dict:
+    summary_file = path_resolver.diff_summary(config_id)
+    pr_body_file = path_resolver.pr_body(config_id)
+
+    summary = load_summary(summary_file)
     gate = classify(summary)
     body = build_body(summary, gate)
 
-    PR_BODY_FILE.parent.mkdir(parents=True, exist_ok=True)
-    PR_BODY_FILE.write_text(body)
-    print(f"Prepared PR body at {PR_BODY_FILE} with gate={gate}")
+    pr_body_file.parent.mkdir(parents=True, exist_ok=True)
+    pr_body_file.write_text(body)
+    print(f"[{config_id}] Prepared PR body at {pr_body_file} gate={gate}")
+    return summary
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Generate PR body from diff summary")
+    parser.add_argument("--config-id", help="Process a single config ID (default: all)")
+    args = parser.parse_args()
+
+    all_summaries: Dict = {}
+    if args.config_id:
+        config_loader.load_config(args.config_id)
+        all_summaries = run_for_config(args.config_id)
+    else:
+        for config_id in config_loader.list_config_ids():
+            all_summaries.update(run_for_config(config_id))
+
+    gate = classify(all_summaries)
     if gate == "no_changes":
         print("No changes detected; skip PR creation")
     elif gate == "pr_block_auto_merge":

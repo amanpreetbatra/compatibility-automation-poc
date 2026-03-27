@@ -2,52 +2,113 @@ name: Compatibility Update
 
 on:
   schedule:
-    - cron: '0 3 * * 1' # weekly Monday UTC
-  workflow_dispatch: {}
+    # Every Monday at 3:00 AM UTC
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+    inputs:
+      config_id:
+        description: 'Specific config ID to run (leave empty for all)'
+        required: false
+        default: ''
 
 jobs:
-  compatibility-update:
+  # Dynamically build the matrix from configs/sources/*.yaml
+  setup:
     runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Build config matrix
+        id: set-matrix
+        run: |
+          if [ -n "${{ github.event.inputs.config_id }}" ]; then
+            MATRIX=$(python3 -c "import json; print(json.dumps({'config_id': ['${{ github.event.inputs.config_id }}']}))")
+          else
+            MATRIX=$(python3 -c "
+          import yaml, pathlib, json, sys
+          configs_dir = pathlib.Path('configs/sources')
+          if not configs_dir.exists():
+              print(json.dumps({'config_id': []}))
+              sys.exit(0)
+          ids = []
+          for p in sorted(configs_dir.glob('*.yaml')):
+              try:
+                  cfg = yaml.safe_load(p.read_text())
+                  ids.append(cfg.get('id', p.stem))
+              except Exception:
+                  ids.append(p.stem)
+          print(json.dumps({'config_id': ids}))
+          ")
+          fi
+          echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
+          echo "Matrix: $MATRIX"
+
+  compatibility-update:
+    needs: setup
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJson(needs.setup.outputs.matrix) }}
+      fail-fast: false   # one product failing should not cancel others
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install pyyaml
+        run: pip install pyyaml requests
+
+      - name: Fetch sources
+        run: python scripts/fetch_sources.py --config-id ${{ matrix.config_id }}
 
       - name: Detect changes
-        run: python scripts/detect_changes.py
+        run: python scripts/detect_changes.py --config-id ${{ matrix.config_id }}
 
       - name: Extract text
-        run: python scripts/extract_text.py
+        run: python scripts/extract_text.py --config-id ${{ matrix.config_id }}
 
-      - name: Extract envelope
-        run: python scripts/extract_envelope.py
+      - name: Extract compatibility envelope
+        id: extract
+        run: |
+          OUTPUT=$(python scripts/extract_envelope.py --config-id ${{ matrix.config_id }} 2>&1)
+          echo "$OUTPUT"
+          if echo "$OUTPUT" | grep -q "HUMAN_REVIEW_NEEDED"; then
+            echo "needs_review=true" >> $GITHUB_OUTPUT
+          else
+            echo "needs_review=false" >> $GITHUB_OUTPUT
+          fi
 
-      - name: Diff rules
-        run: python scripts/diff_rules.py
+      - name: Generate Copilot review request
+        if: steps.extract.outputs.needs_review == 'true'
+        run: |
+          python scripts/human_review.py --config-id ${{ matrix.config_id }}
+          echo ""
+          echo "Human review required. Download the review artifact, open in VS Code,"
+          echo "paste the prompt into Copilot Chat, fill the response template, then run:"
+          echo "  python scripts/ingest_review.py --config-id ${{ matrix.config_id }} --review <response.yaml>"
 
-      - name: Generate tests
-        run: python scripts/generate_tests.py
+      - name: Diff rules against baseline
+        run: python scripts/diff_rules.py --config-id ${{ matrix.config_id }}
+
+      - name: Generate test cases
+        run: python scripts/generate_tests.py --config-id ${{ matrix.config_id }}
+
+      - name: Create PR body
+        run: python scripts/create_pr.py --config-id ${{ matrix.config_id }}
 
       - name: Upload artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: compatibility-artifacts
+          name: compatibility-artifacts-${{ matrix.config_id }}
           path: |
-            rules/_generated/**
-            tests/_generated/**
-            docs/parsed/**
+            rules/generated/${{ matrix.config_id }}.yaml
+            tests/generated/${{ matrix.config_id }}_cases.yaml
+            data/${{ matrix.config_id }}/parsed/
+            human_reviews/${{ matrix.config_id }}/
           if-no-files-found: warn
-
-      - name: Create PR
-        if: success()
-        run: python scripts/create_pr.py

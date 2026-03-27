@@ -1,0 +1,26 @@
+id: veritas-infoscale_rhel
+product:
+  name: veritas-infoscale
+  version: "8.0.2"
+platform:
+  name: rhel
+  version: "8"
+version_constraint:
+  type: kernel_range
+  # Matches RHEL kernel strings like 4.18.0-425.el8
+  # Only group 1 (the numeric build ID after the dash) is used for ordering;
+  # the 4.18.0 prefix and el8 suffix are invariant within RHEL 8.
+  version_regex: '\d+\.\d+\.\d+-(\d+)\.el\d+'
+  comparison_groups: [1]
+sources:
+  - name: veritas_hcl_oct2023
+    url: ""
+    type: vendor_hcl
+    local_path: ""
+  - name: veritas_rn_802
+    url: ""
+    type: release_notes
+    local_path: ""
+notes:
+  risk: "Running outside the certified kernel envelope can destabilize Veritas storage and clustering modules."
+  remediation: "Keep kernel upgrades within the certified envelope or obtain updated vendor confirmation before rollout."

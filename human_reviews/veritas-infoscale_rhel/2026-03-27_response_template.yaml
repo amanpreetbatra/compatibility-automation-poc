@@ -1,0 +1,26 @@
+compatibility:
+  status: supported
+  version_constraint:
+    min: 4.18.0-193.el8
+    max: 4.18.0-425.el8
+    unsupported_examples:
+    - 4.18.0-80.el8
+    - 4.18.0-477.el8
+    - 4.18.0-513.el8
+notes:
+  risk: Running outside the certified kernel envelope can destabilize Veritas storage
+    and clustering modules.
+  remediation: Keep kernel upgrades within the certified envelope or obtain updated
+    vendor confirmation before rollout.
+metadata:
+  sources:
+  - name: Veritas InfoScale 8.0.2 Product Compatibility List (October 2023)
+    reference: PCL-8.0.2-Oct2023
+    type: vendor_hcl
+  - name: Veritas InfoScale 8.0.2 Release Notes
+    reference: RN-8.0.2
+    type: release_notes
+  - name: RHEL 8.7 GA kernel 4.18.0-425.el8 errata advisory
+    reference: RHEL8.7-GA-4.18.0-425.el8
+    type: advisory
+  confidence: high
