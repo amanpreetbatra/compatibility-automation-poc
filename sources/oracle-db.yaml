@@ -1,0 +1,41 @@
+app: oracle-db
+description: Oracle Database Server
+vendor: Oracle Corporation
+
+versions:
+  - "19c"
+  - "21c"
+  - "23ai"
+
+platforms:
+  - rhel
+  - oracle-linux
+  - sles
+  - ubuntu
+
+docs:
+  - name: Oracle Database Certification Matrix
+    url: https://support.oracle.com/epmos/faces/CertifyHome
+    type: hcl
+    notes: Official certification matrix — requires Oracle Support login
+
+  - name: Oracle Linux and Oracle DB Compatibility
+    url: https://docs.oracle.com/en/database/oracle/oracle-database/
+    type: documentation
+    notes: Installation guides contain OS/kernel requirements
+
+  - name: Oracle Support Note 2219420.1 — Supported Kernels
+    url: https://support.oracle.com/knowledge/Oracle%20Database%20Products/2219420_1.html
+    type: advisory
+    notes: Lists specific supported kernel versions (requires login)
+
+  - name: Oracle Database Pre-Install RPM
+    url: https://docs.oracle.com/en/database/oracle/oracle-database/19/ladbi/
+    type: install_guide
+    notes: Pre-install checks include kernel version validation
+
+search_terms:
+  - "oracle database {version} rhel {platform_version} kernel compatibility"
+  - "oracle {version} supported kernel versions linux"
+  - "site:docs.oracle.com oracle database {version} system requirements"
+  - "oracle {version} {platform_version} certified kernels"

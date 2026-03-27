@@ -1,0 +1,43 @@
+app: veritas-infoscale
+description: Veritas InfoScale (Storage Foundation / Cluster Server)
+vendor: Veritas Technologies
+
+versions:
+  - "7.4"
+  - "8.0"
+  - "8.0.2"
+  - "9.0"
+  - "9.1"
+
+platforms:
+  - rhel
+  - ubuntu
+  - sles
+  - aix
+
+docs:
+  - name: Veritas InfoScale HCL (Hardware Compatibility List)
+    url: https://www.veritas.com/support/en_US/article/000127013
+    type: hcl
+    notes: Primary source — lists supported OS, kernel, and hardware
+
+  - name: Veritas InfoScale Release Notes
+    url: https://www.veritas.com/support/en_US/article/000127005
+    type: release_notes
+    notes: Contains supported kernel version ranges per release
+
+  - name: Veritas InfoScale Installation Guide
+    url: https://www.veritas.com/support/en_US/article/000127007
+    type: install_guide
+    notes: System requirements and pre-requisites
+
+  - name: Veritas Support Portal
+    url: https://www.veritas.com/support
+    type: support_portal
+    notes: Search for specific KB articles and advisories
+
+search_terms:
+  - "veritas infoscale {version} rhel {platform_version} kernel compatibility"
+  - "veritas infoscale {version} supported kernel versions"
+  - "veritas infoscale {version} release notes kernel"
+  - "site:veritas.com infoscale {version} compatibility"

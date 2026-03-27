@@ -1,0 +1,39 @@
+app: sap-hana
+description: SAP HANA In-Memory Database
+vendor: SAP SE
+
+versions:
+  - "2.0 SPS06"
+  - "2.0 SPS07"
+  - "2.0 SPS08"
+
+platforms:
+  - rhel
+  - sles
+
+docs:
+  - name: SAP HANA Hardware and Cloud Measurement Tools (HCMT)
+    url: https://launchpad.support.sap.com/#/notes/2493172
+    type: hcl
+    notes: Primary certification source (requires SAP login)
+
+  - name: SAP Note 2235581 — Supported OS for SAP HANA
+    url: https://launchpad.support.sap.com/#/notes/2235581
+    type: advisory
+    notes: Lists all certified OS and kernel versions
+
+  - name: SAP HANA Installation and Update Guide
+    url: https://help.sap.com/docs/SAP_HANA_PLATFORM
+    type: install_guide
+    notes: System requirements section
+
+  - name: Red Hat / SAP HANA Compatibility
+    url: https://access.redhat.com/solutions/2479011
+    type: advisory
+    notes: Red Hat's own compatibility notes for SAP HANA
+
+search_terms:
+  - "SAP HANA {version} rhel {platform_version} kernel compatibility"
+  - "SAP HANA supported kernel versions {platform_version}"
+  - "site:help.sap.com hana {version} system requirements"
+  - "SAP note HANA kernel support {platform_version}"

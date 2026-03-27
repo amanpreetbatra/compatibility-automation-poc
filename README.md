@@ -1,208 +1,161 @@
-# compatibility-automation-poc
+# Compatibility Checker — Copilot PoC
 
-Deterministic, auditable compatibility automation for any product and platform.
-
-Query whether a software version is compatible, automatically extract bounds from vendor docs, and gate changes with a conservative safety policy. Uses VS Code Copilot for human-assisted review when automation is ambiguous.
+Ask VS Code Copilot whether a kernel version is safe to patch to, and get a structured answer with references.
 
 ---
 
-## Quick start
+## The Problem
 
-```bash
-pip install pyyaml requests
+Before patching a Linux system, you need to verify that the new kernel version is compatible with your installed applications (Veritas InfoScale, Oracle DB, SAP HANA, etc.). This means:
 
-# Is veritas-infoscale compatible with this kernel?
-python3 scripts/query.py --product veritas-infoscale --platform rhel --version 4.18.0-305.el8
+- Searching vendor HCL pages
+- Reading release notes
+- Checking Red Hat advisories
+- Cross-referencing multiple docs
 
-# Run the full pipeline for one product/platform pair
-python3 scripts/detect_changes.py --config-id veritas-infoscale_rhel
-python3 scripts/extract_text.py   --config-id veritas-infoscale_rhel
-python3 scripts/extract_envelope.py --config-id veritas-infoscale_rhel
-python3 scripts/diff_rules.py     --config-id veritas-infoscale_rhel
-python3 scripts/generate_tests.py --config-id veritas-infoscale_rhel
-python3 scripts/create_pr.py      --config-id veritas-infoscale_rhel
-```
+This takes 30–60 minutes per patch window. It's manual, error-prone, and undocumented.
 
 ---
 
-## How it works
+## The Solution (This PoC)
 
-Each product+platform pair has a **config ID** (e.g., `veritas-infoscale_rhel`). A single YAML file in `configs/sources/` drives everything for that pair.
+**Ask Copilot. Get an answer in seconds.**
 
-```
-GitHub Actions (manual or weekly schedule)
-  |
-  |-- fetch_sources.py      Download vendor docs to data/{id}/raw/
-  |-- detect_changes.py     Hash files, detect what changed -> pending.json
-  |-- extract_text.py       Convert PDF/HTML to plain text
-  |-- extract_envelope.py   Parse min/max version bounds (explicit only)
-  |       |
-  |       +-- HUMAN_REVIEW_NEEDED? -> human_review.py generates Copilot prompt
-  |
-  |-- diff_rules.py         Compare to baseline -> ALLOW or BLOCK
-  |-- generate_tests.py     Build GO/NO_GO test cases
-  |-- create_pr.py          Produce PR body with gating decision
-  |-- Upload artifacts      rules/generated/, tests/generated/, human_reviews/
-```
-
----
-
-## File layout
+Open VS Code Copilot Chat and type:
 
 ```
-configs/sources/{id}.yaml          One config per product+platform pair
-data/{id}/raw/                     Fetched vendor docs (PDF, HTML, TXT)
-data/{id}/parsed/                  Extracted text, manifests, diff summaries
+Is Veritas InfoScale 8.0.2 compatible with RHEL 8 kernel 4.18.0-477.el8?
+```
 
-rules/baselines/{id}.yaml          Authoritative baseline (schema v2.0)
-rules/generated/{id}.yaml          Auto-extracted rule (pipeline output)
+Copilot searches the vendor HCL pages, release notes, and the internet — guided by the sources defined in this repo — and returns:
 
-tests/baselines/{id}_cases.yaml    Hand-written test cases
-tests/generated/{id}_cases.yaml    Auto-generated GO/NO_GO tests
+```
+### Verdict: ❌ NOT COMPATIBLE
 
-human_reviews/{id}/                Copilot review prompts and response templates
+Reason: Supported range is 4.18.0-193.el8 to 4.18.0-425.el8.
+        Kernel 4.18.0-477.el8 exceeds the upper bound.
 
-scripts/
-  lib/
-    path_resolver.py               All file paths in one place
-    config_loader.py               Load and validate configs
-    version_compare.py             Generic version comparison (kernel, semver, package)
-  query.py                         CLI compatibility query
-  fetch_sources.py                 Download vendor docs
-  detect_changes.py                Hash-based change detection
-  extract_text.py                  Text extraction from raw docs
-  extract_envelope.py              Parse version bounds from text
-  diff_rules.py                    Compare generated vs baseline
-  generate_tests.py                Generate test cases
-  create_pr.py                     Generate PR body
-  human_review.py                  Generate VS Code Copilot review request
-  ingest_review.py                 Merge Copilot response into baseline
-  migrate_legacy.py                One-time migration from old docs/ structure
+References:
+  1. Veritas HCL (Oct 2023) — https://veritas.com/... — Section: Supported Kernels RHEL 8
+  2. Veritas 8.0.2 Release Notes — https://veritas.com/...
 
-.vscode/tasks.json                 VS Code tasks for common operations
-.github/copilot-instructions.md    Copilot context for this repo
+Confidence: High
+Note: Do not patch. Highest safe kernel is 4.18.0-425.el8.
 ```
 
 ---
 
-## Querying compatibility
+## How It Works
 
-```bash
-# Basic query
-python3 scripts/query.py \
-  --product veritas-infoscale \
-  --platform rhel \
-  --version 4.18.0-305.el8
-
-# Scope to specific versions
-python3 scripts/query.py \
-  --product veritas-infoscale --product-version 8.0.2 \
-  --platform rhel --platform-version 8 \
-  --version 4.18.0-477.el8
-
-# Machine-readable JSON output
-python3 scripts/query.py --product veritas-infoscale --platform rhel \
-  --version 4.18.0-305.el8 --json
 ```
-
-Exit codes: `0` = COMPATIBLE, `1` = NOT_COMPATIBLE, `2` = UNKNOWN
+You ask Copilot
+      │
+      ▼
+copilot-instructions.md        ← tells Copilot exactly how to answer
+      │
+      ▼
+sources/{app}.yaml             ← per-app list of HCL URLs, release notes, search terms
+      │
+      ▼
+Copilot searches those URLs + internet
+      │
+      ▼
+Returns: YES/NO + Reason + References + Confidence
+```
 
 ---
 
-## Adding a new product or platform
+## Asking a Question
 
-1. Create `configs/sources/{id}.yaml`:
+Open **Copilot Chat** in VS Code (`Ctrl+Shift+I` / `Cmd+Shift+I`) and ask naturally:
+
+```
+Is Veritas InfoScale 8.0.2 compatible with RHEL 8 kernel 4.18.0-305.el8?
+```
+
+```
+Can I patch my RHEL 8 system to kernel 4.18.0-477.el8 if I have Veritas InfoScale 8.0.2?
+```
+
+```
+What is the highest kernel I can safely use with Veritas InfoScale 8.0.2 on RHEL 8?
+```
+
+```
+Is Oracle DB 19c certified on RHEL 8 kernel 4.18.0-425.el8?
+```
+
+---
+
+## Adding a New Application
+
+Create `sources/{app-name}.yaml`:
 
 ```yaml
-id: oracle-db_rhel
-product:
-  name: oracle-db
-  version: "19c"
-platform:
-  name: rhel
-  version: "8"
-version_constraint:
-  type: semver                           # kernel_range | semver | package_version
-  version_regex: '(\d+)\.(\d+)\.(\d+)'
-  comparison_groups: [1, 2, 3]
-sources:
-  - name: oracle_cert_matrix_2026
-    url: ""                              # URL to vendor doc
-    type: vendor_hcl
-    local_path: ""                       # or path to locally downloaded file
+app: your-app
+description: Your Application Name
+vendor: Vendor Name
+
+versions:
+  - "1.0"
+  - "2.0"
+
+platforms:
+  - rhel
+  - ubuntu
+
+docs:
+  - name: Official HCL
+    url: https://vendor.com/hcl
+    type: hcl
+    notes: Primary source for compatibility
+
+  - name: Release Notes
+    url: https://vendor.com/release-notes
+    type: release_notes
+
+search_terms:
+  - "your-app {version} {platform} kernel compatibility"
+  - "site:vendor.com your-app {version} supported kernels"
 ```
 
-2. Create `rules/baselines/{id}.yaml` with known bounds (or leave for pipeline to discover).
-
-3. Add the new `id` to `.vscode/tasks.json` under the `configId` input options.
-
-4. Run the pipeline:
-```bash
-python3 scripts/fetch_sources.py --config-id oracle-db_rhel
-python3 scripts/detect_changes.py --config-id oracle-db_rhel
-# ... rest of pipeline
-```
-
-5. If no vendor docs are available yet, use the human review flow below.
+That's it. Copilot will automatically use these sources next time you ask about that app.
 
 ---
 
-## Human review with VS Code Copilot
+## Supported Applications
 
-When the pipeline cannot extract version bounds with high confidence, it prints `HUMAN_REVIEW_NEEDED` and you run:
+| App | Versions | Source File |
+|-----|---------|------------|
+| Veritas InfoScale | 7.4, 8.0, 8.0.2, 9.0, 9.1 | `sources/veritas-infoscale.yaml` |
+| Oracle Database | 19c, 21c, 23ai | `sources/oracle-db.yaml` |
+| SAP HANA | 2.0 SPS06–08 | `sources/sap-hana.yaml` |
 
-```bash
-python3 scripts/human_review.py --config-id veritas-infoscale_rhel
+---
+
+## Future: LLM API Integration
+
+When an LLM API key is approved, the same question can be answered automatically — no Copilot needed. The `sources/` structure and answer format stay exactly the same; only the backend changes.
+
+```python
+# Future: one environment variable switches from Copilot to API
+LLM_PROVIDER=openai   # or anthropic, azure
+LLM_API_KEY=sk-...
 ```
 
-This creates two files in `human_reviews/{id}/`:
-- `YYYY-MM-DD_review.md` — open in VS Code, paste the prompt into Copilot Chat
-- `YYYY-MM-DD_response_template.yaml` — fill in with Copilot's answer
+---
 
-Then ingest the response:
+## Repository Structure
 
-```bash
-python3 scripts/ingest_review.py \
-  --config-id veritas-infoscale_rhel \
-  --review human_reviews/veritas-infoscale_rhel/YYYY-MM-DD_response_template.yaml
 ```
-
-This updates the baseline rule and re-runs diff and test generation automatically.
-
-In VS Code, use **Terminal > Run Task** to access all common operations.
-
----
-
-## Safety and gating
-
-| Change | Decision |
-|--------|----------|
-| Envelope widening (lower min or higher max) | BLOCKED |
-| Ambiguous extraction or low confidence | BLOCKED |
-| Missing vendor source | BLOCKED |
-| Envelope narrowing (higher min or lower max) | ALLOWED (risk-reducing) |
-| Metadata-only change | INFO |
-
-Only version bounds that appear **explicitly on the same line as a support statement** are accepted as high-confidence. Anything else is flagged ambiguous and requires human review via Copilot before it can be merged.
-
----
-
-## Version constraint types
-
-| Type | Example | Use case |
-|------|---------|---------|
-| `kernel_range` | `4.18.0-425.el8` | RHEL kernel upgrade windows |
-| `semver` | `9.1.0` | Software package versions |
-| `package_version` | `8.0.2-1.el8` | RPM/deb package releases |
-
----
-
-## GitHub Actions
-
-The workflow runs weekly (Monday 03:00 UTC) or on manual dispatch. It dynamically builds a matrix from all files in `configs/sources/` — adding a new product requires no workflow changes.
-
-To run for a single config from the Actions UI:
-1. Go to **Actions → Compatibility Update → Run workflow**
-2. Enter the config ID (e.g., `veritas-infoscale_rhel`)
-
-Each product/platform runs independently (`fail-fast: false`). Artifacts are uploaded per config ID.
+.github/
+  copilot-instructions.md   ← Copilot behaviour definition (the core of this PoC)
+sources/
+  veritas-infoscale.yaml    ← Veritas HCL URLs + search terms
+  oracle-db.yaml            ← Oracle certification matrix URLs
+  sap-hana.yaml             ← SAP HANA support notes URLs
+docs/
+  architecture_guide.pdf    ← Architecture document
+  presentation.pptx         ← Slide deck for stakeholders
+README.md
+```
